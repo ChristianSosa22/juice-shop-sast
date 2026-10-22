@@ -15,14 +15,14 @@ jobs:                                                  # Lista de trabajos del w
     steps:                                             # Pasos que se ejecutan en orden dentro del job
       - name: Checkout del código                      # Paso 1: descargar el código del repositorio
         uses: actions/checkout@v5                      # Acción oficial que clona el repo en el runner
-      - name: Bearer - reporte SARIF                   # Paso 2: escanear todo el repositorio y generar SARIF
+      - name: Escaneo SAST - reporte SARIF            # Paso 2: escanear todo el repositorio y generar SARIF
         uses: bearer/bearer-action@v2                  # Acción oficial de Bearer (instala y ejecuta Bearer CLI)
         with:                                          # Parámetros que se pasan a Bearer
           path: .                                      # Escanea todo el repositorio (raíz del checkout)
           format: sarif                                # Formato SARIF, el que entiende GitHub Code scanning
           output: bearer-results.sarif                 # Archivo donde se guarda el reporte SARIF
           exit-code: 0                                 # Fuerza código de salida 0 para que los hallazgos no detengan el job
-      - name: Bearer - reporte HTML                    # Paso 3: volver a escanear y generar el reporte legible HTML
+      - name: Escaneo SAST - reporte HTML             # Paso 3: volver a escanear y generar el reporte legible HTML
         if: always()                                   # Se ejecuta aunque el paso anterior haya fallado
         uses: bearer/bearer-action@v2                  # Misma acción de Bearer
         with:                                          # Parámetros que se pasan a Bearer
