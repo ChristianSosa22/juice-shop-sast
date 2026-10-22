@@ -38,7 +38,7 @@ jobs:                                                  # Lista de trabajos del w
           category: bearer                             # Categoría para agrupar y comparar los análisis de Bearer entre ramas
       - name: Guardar reporte HTML como artefacto      # Paso 5: dejar el HTML descargable desde la ejecución
         if: always()                                   # Se sube aunque algún paso anterior haya fallado
-        uses: actions/upload-artifact@v4               # Acción oficial para guardar artefactos de la ejecución
+        uses: actions/upload-artifact@v7               # Acción oficial para guardar artefactos de la ejecución
         with:                                          # Parámetros del artefacto
           name: bearer-html-report                     # Nombre del artefacto en la página de la ejecución
           path: bearer-report.html                     # Archivo que se adjunta como artefacto
