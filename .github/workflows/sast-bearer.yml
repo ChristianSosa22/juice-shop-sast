@@ -1,0 +1,45 @@
+name: SAST - Bearer CLI                                 # Nombre del workflow que aparece en la pestaña Actions
+on:                                                    # Eventos que disparan el pipeline
+  push:                                                # Se ejecuta al hacer push...
+    branches: [ main ]                                 # ...únicamente a la rama main
+  pull_request:                                        # Se ejecuta al abrir o actualizar un Pull Request...
+    branches: [ main ]                                 # ...cuyo destino sea la rama main
+  workflow_dispatch:                                   # Permite lanzarlo manualmente con el botón "Run workflow"
+permissions:                                           # Permisos mínimos del GITHUB_TOKEN (principio de menor privilegio)
+  contents: read                                       # Solo lectura del código del repositorio
+  security-events: write                               # Escritura de alertas en Security > Code scanning (subir SARIF)
+jobs:                                                  # Lista de trabajos del workflow
+  bearer:                                              # Identificador del job de análisis SAST
+    name: Bearer SAST scan                             # Nombre visible del job en la interfaz de GitHub
+    runs-on: ubuntu-latest                             # Ejecuta el job en una máquina virtual Ubuntu hospedada por GitHub
+    steps:                                             # Pasos que se ejecutan en orden dentro del job
+      - name: Checkout del código                      # Paso 1: descargar el código del repositorio
+        uses: actions/checkout@v5                      # Acción oficial que clona el repo en el runner
+      - name: Bearer - reporte SARIF                   # Paso 2: escanear todo el repositorio y generar SARIF
+        uses: bearer/bearer-action@v2                  # Acción oficial de Bearer (instala y ejecuta Bearer CLI)
+        with:                                          # Parámetros que se pasan a Bearer
+          path: .                                      # Escanea todo el repositorio (raíz del checkout)
+          format: sarif                                # Formato SARIF, el que entiende GitHub Code scanning
+          output: bearer-results.sarif                 # Archivo donde se guarda el reporte SARIF
+          exit-code: 0                                 # Fuerza código de salida 0 para que los hallazgos no detengan el job
+      - name: Bearer - reporte HTML                    # Paso 3: volver a escanear y generar el reporte legible HTML
+        if: always()                                   # Se ejecuta aunque el paso anterior haya fallado
+        uses: bearer/bearer-action@v2                  # Misma acción de Bearer
+        with:                                          # Parámetros que se pasan a Bearer
+          path: .                                      # Escanea todo el repositorio
+          format: html                                 # Formato HTML para revisión humana
+          output: bearer-report.html                   # Archivo donde se guarda el reporte HTML
+          exit-code: 0                                 # No falla el job por tener hallazgos
+      - name: Subir SARIF a Code scanning              # Paso 4: publicar los hallazgos en Security > Code scanning
+        if: always()                                   # Nunca se salta, aunque Bearer encuentre vulnerabilidades
+        uses: github/codeql-action/upload-sarif@v4     # Acción oficial de GitHub para cargar archivos SARIF
+        with:                                          # Parámetros de la carga
+          sarif_file: bearer-results.sarif             # Ruta del SARIF generado en el paso 2
+          category: bearer                             # Categoría para agrupar y comparar los análisis de Bearer entre ramas
+      - name: Guardar reporte HTML como artefacto      # Paso 5: dejar el HTML descargable desde la ejecución
+        if: always()                                   # Se sube aunque algún paso anterior haya fallado
+        uses: actions/upload-artifact@v4               # Acción oficial para guardar artefactos de la ejecución
+        with:                                          # Parámetros del artefacto
+          name: bearer-html-report                     # Nombre del artefacto en la página de la ejecución
+          path: bearer-report.html                     # Archivo que se adjunta como artefacto
+          retention-days: 30                           # Días que GitHub conserva el artefacto
